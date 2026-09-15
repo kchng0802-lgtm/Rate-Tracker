@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rate Comparison Tracker · Broadcom Logistics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#0e131a;
+    --surface:#161d27;
+    --surface-2:#1c2530;
+    --border:#2a3542;
+    --border-soft:#212b37;
+    --text:#e8edf3;
+    --text-dim:#93a2b3;
+    --text-faint:#5b6b7c;
+    --accent:#d81e3f;
+    --accent-hover:#f0243f;
+    --accent-dim:#3a141c;
+    --good:#33b56c;
+    --good-bg:rgba(51,181,108,.12);
+    --warn:#dba53a;
+    --warn-bg:rgba(219,165,58,.12);
+    --danger:#e2523f;
+    --danger-bg:rgba(226,82,63,.12);
+    --sans:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --radius:7px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:14.5px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent);color:#fff;}
+  a{color:inherit;}
+  button{font-family:inherit;}
+  input,select,textarea{font-family:inherit;font-size:inherit;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important;transition-duration:0.001ms !important;}
+  }
+
+  /* ---------- Login screen ---------- */
+  #login-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(ellipse 900px 600px at 20% 15%, rgba(216,30,63,.10), transparent 60%),
+      var(--bg);
+  }
+  #login-routes{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    opacity:.5;
+    pointer-events:none;
+  }
+  .login-card{
+    position:relative;
+    z-index:2;
+    width:100%;
+    max-width:380px;
+    padding:38px 36px 32px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:0 24px 60px -20px rgba(0,0,0,.6);
+  }
+  .login-mark{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:26px;
+  }
+  .login-mark .dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--accent);
+    flex:none;
+  }
+  .login-mark .wordmark{
+    font-size:12.5px;
+    letter-spacing:.04em;
+    color:var(--text-dim);
+    text-transform:uppercase;
+  }
+  .login-card h1{
+    font-size:21px;
+    font-weight:700;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  .login-card p.sub{
+    color:var(--text-dim);
+    font-size:13.5px;
+    margin:0 0 26px;
+  }
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  .field input{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:6px;
+    font-size:14px;
+  }
+  .field input:focus{border-color:var(--accent);}
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    border:1px solid transparent;
+    border-radius:6px;
+    padding:10px 16px;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .12s ease, border-color .12s ease;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent-hover);}
+  .btn-primary:disabled{opacity:.55;cursor:default;}
+  .btn-ghost{background:transparent;border-color:var(--border);color:var(--text);}
+  .btn-ghost:hover{border-color:var(--text-faint);}
+  .btn-danger{background:transparent;border-color:var(--danger);color:var(--danger);}
+  .btn-danger:hover{background:var(--danger-bg);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:6px 10px;font-size:12.5px;}
+
+  .login-error{
+    background:var(--danger-bg);
+    border:1px solid var(--danger);
+    color:#ff9a8c;
+    font-size:12.5px;
+    padding:9px 11px;
+    border-radius:6px;
+    margin-bottom:16px;
+    display:none;
+  }
+  .login-foot{
+    margin-top:20px;
+    font-size:11.5px;
+    color:var(--text-faint);
+    line-height:1.55;
+  }
+
+  /* ---------- App shell ---------- */
+  #app{display:none;min-height:100vh;flex-direction:column;}
+  header.topbar{
+    border-bottom:1px solid var(--border);
+    background:var(--surface);
+  }
+  .topbar-inner{
+    max-width:1180px;
+    margin:0 auto;
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);}
+  .brand-text h2{font-size:15px;margin:0;font-weight:700;letter-spacing:-0.01em;}
+  .brand-text span{font-size:11.5px;color:var(--text-faint);}
+  .who{display:flex;align-items:center;gap:14px;}
+  .who .name{font-size:13px;color:var(--text-dim);}
+  .who .name b{color:var(--text);font-weight:600;}
+  .role-badge{
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    padding:2px 7px;
+    border-radius:4px;
+    border:1px solid var(--border);
+    color:var(--text-faint);
+  }
+
+  nav.tabs{
+    border-bottom:1px solid var(--border);
+    background:var(--surface);
+    overflow-x:auto;
+  }
+  .tabs-inner{
+    max-width:1180px;
+    margin:0 auto;
+    padding:0 24px;
+    display:flex;
+    gap:4px;
+  }
+  .tab-btn{
+    background:transparent;
+    border:none;
+    color:var(--text-dim);
+    padding:12px 4px;
+    margin-right:22px;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    white-space:nowrap;
+  }
+  .tab-btn:hover{color:var(--text);}
+  .tab-btn.active{color:var(--text);border-bottom-color:var(--accent);}
+
+  main{
+    flex:1;
+    max-width:1180px;
+    width:100%;
+    margin:0 auto;
+    padding:28px 24px 60px;
+  }
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  h3.section-title{
+    font-size:16px;
+    font-weight:700;
+    margin:0 0 4px;
+    letter-spacing:-0.01em;
+  }
+  p.section-sub{
+    color:var(--text-dim);
+    font-size:13px;
+    margin:0 0 20px;
+  }
+
+  .stat-row{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    overflow:hidden;
+    margin-bottom:28px;
+  }
+  .stat{
+    background:var(--surface);
+    padding:18px 20px;
+  }
+  .stat .num{
+    font-family:var(--mono);
+    font-size:26px;
+    font-weight:600;
+    color:var(--text);
+  }
+  .stat .label{
+    font-size:11.5px;
+    color:var(--text-faint);
+    margin-top:4px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+  }
+
+  .panel-block{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    margin-bottom:22px;
+  }
+  .panel-block .pb-head{
+    padding:14px 18px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .panel-block .pb-head h4{margin:0;font-size:13.5px;font-weight:700;}
+  .panel-block .pb-body{padding:18px;}
+
+  table{width:100%;border-collapse:collapse;}
+  th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    color:var(--text-faint);
+    font-weight:600;
+    padding:9px 12px;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  td{
+    padding:11px 12px;
+    border-bottom:1px solid var(--border-soft);
+    font-size:13.5px;
+    vertical-align:middle;
+  }
+  tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--surface-2);}
+  .num-cell{font-family:var(--mono);}
+  .best-row{background:var(--good-bg);}
+  .table-wrap{overflow-x:auto;}
+  .table-empty{padding:30px 12px;text-align:center;color:var(--text-faint);font-size:13px;}
+
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:4px;
+    font-weight:600;
+  }
+  .badge-good{background:var(--good-bg);color:var(--good);}
+  .badge-warn{background:var(--warn-bg);color:var(--warn);}
+  .badge-danger{background:var(--danger-bg);color:var(--danger);}
+  .badge-neutral{background:var(--surface-2);color:var(--text-dim);border:1px solid var(--border);}
+  .badge-xtpl{background:rgba(47,184,198,.14);color:#4fd3e0;}
+  .badge-brcm{background:rgba(147,162,179,.14);color:#c3ccd6;}
+
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    margin-bottom:16px;
+  }
+  .toolbar select, .toolbar input[type=text]{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:6px;
+    font-size:13px;
+  }
+  .spacer{flex:1;}
+
+  .form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:14px 16px;
+  }
+  .form-grid .full{grid-column:1 / -1;}
+  .form-grid label{
+    display:block;
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  .form-grid input, .form-grid select, .form-grid textarea{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:9px 11px;
+    border-radius:6px;
+    font-size:13.5px;
+  }
+  .form-grid textarea{resize:vertical;min-height:56px;}
+  .form-actions{
+    margin-top:18px;
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+  }
+
+  .form-section-label{
+    font-size:11.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--accent);
+    padding-bottom:8px;
+    margin-bottom:16px;
+    border-bottom:1px solid var(--border);
+  }
+  .quote-count-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .quote-count-row label{font-size:12.5px;font-weight:600;color:var(--text-dim);}
+  .quote-count-hint{margin:3px 0 0;font-size:11.5px;color:var(--text-faint);}
+  .count-stepper{display:flex;align-items:center;gap:8px;}
+  .count-stepper button{
+    width:30px;height:30px;
+    border-radius:6px;
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text);
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+  }
+  .count-stepper button:hover{border-color:var(--text-faint);}
+  .count-stepper input{
+    width:52px;
+    text-align:center;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:6px 4px;
+    border-radius:6px;
+    font-family:var(--mono);
+  }
+  .quote-table{display:flex;flex-direction:column;gap:8px;}
+  .quote-head{
+    display:grid;
+    grid-template-columns:2.4fr 1fr 1fr 30px;
+    gap:8px;
+    padding:0 2px;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    color:var(--text-faint);
+  }
+  .quote-row{
+    display:grid;
+    grid-template-columns:2.4fr 1fr 1fr 30px;
+    gap:8px;
+    align-items:center;
+  }
+  .quote-row select, .quote-row input{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:8px 9px;
+    border-radius:6px;
+    font-size:13px;
+  }
+  .qr-remove{
+    width:30px;height:34px;
+    border-radius:6px;
+    border:1px solid var(--border);
+    background:transparent;
+    color:var(--text-faint);
+    cursor:pointer;
+    font-size:14px;
+    line-height:1;
+  }
+  .qr-remove:hover{border-color:var(--danger);color:var(--danger);}
+  @media (max-width:760px){
+    .quote-head{display:none;}
+    .quote-row{grid-template-columns:1fr 1fr;grid-template-areas:"fwd fwd" "rate transit" "rm rm";}
+  }
+
+  .forwarder-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .fw-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:14px;
+    margin-bottom:20px;
+  }
+  .fw-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .fw-name{font-weight:700;font-size:14.5px;}
+  .fw-meta{font-size:12px;color:var(--text-faint);}
+  .fw-actions{display:flex;gap:6px;margin-top:4px;}
+
+  #toast-stack{
+    position:fixed;
+    bottom:22px;
+    right:22px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    z-index:200;
+  }
+  .toast{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:11px 16px;
+    border-radius:6px;
+    font-size:13px;
+    box-shadow:0 12px 28px -10px rgba(0,0,0,.5);
+    max-width:320px;
+  }
+  .toast.err{border-color:var(--danger);color:#ff9a8c;}
+  .toast.ok{border-color:var(--good);color:#8fe0ae;}
+
+  .modal-backdrop{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(6,9,13,.65);
+    z-index:100;
+    align-items:flex-start;
+    justify-content:center;
+    padding:60px 16px;
+    overflow-y:auto;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    width:100%;
+    max-width:560px;
+    padding:22px 24px 24px;
+  }
+  .modal h4{margin:0 0 4px;font-size:15.5px;font-weight:700;}
+  .modal p.modal-sub{margin:0 0 18px;color:var(--text-dim);font-size:12.5px;}
+
+  .empty-state{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--text-faint);
+    border:1px dashed var(--border);
+    border-radius:var(--radius);
+  }
+  .empty-state .big{font-size:14px;color:var(--text-dim);margin-bottom:4px;}
+
+  .lane-pick{margin-bottom:18px;}
+
+  footer.appfoot{
+    border-top:1px solid var(--border);
+    padding:16px 24px;
+    text-align:center;
+    color:var(--text-faint);
+    font-size:11.5px;
+  }
+
+  @media (max-width:760px){
+    .stat-row{grid-template-columns:repeat(2,1fr);}
+    .form-grid{grid-template-columns:1fr;}
+    .topbar-inner{flex-direction:column;align-items:flex-start;gap:8px;}
+  }
+
+  /* Pro comparison upgrade */
+  .hero-strip{display:grid;grid-template-columns:1.4fr .6fr;gap:16px;margin-bottom:22px}.hero-card{background:linear-gradient(135deg,var(--surface),#1b2430);border:1px solid var(--border);border-radius:10px;padding:22px}.hero-card h3{font-size:22px;margin:0 0 7px}.hero-card p{margin:0;color:var(--text-dim)}.hero-kpi{display:flex;align-items:center;justify-content:center;flex-direction:column}.hero-kpi .big{font:700 30px var(--mono)}
+  .compare-controls{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr auto;gap:10px;align-items:end}.compare-controls label{font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px}.compare-controls input,.compare-controls select{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:6px}.rank1{background:var(--good-bg)!important}.rank2{background:rgba(219,165,58,.07)!important}.saving{color:var(--good);font-family:var(--mono);font-weight:600}.rank-pill{display:inline-flex;min-width:26px;height:26px;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--border);font:600 11px var(--mono)}.rank-pill.first{border-color:var(--good);color:var(--good)}
+  .total-preview{font-family:var(--mono);font-weight:700;color:var(--good)} .input-hint{font-size:10.5px;color:var(--text-faint);margin-top:4px}.compare-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}.mini-stat{background:var(--surface-2);border:1px solid var(--border);padding:12px;border-radius:7px}.mini-stat span{display:block;color:var(--text-faint);font-size:10px;text-transform:uppercase}.mini-stat b{font-family:var(--mono);font-size:16px}.session-chip{font-size:11px;color:var(--text-faint)}
+  @media(max-width:900px){.hero-strip{grid-template-columns:1fr}.compare-controls{grid-template-columns:1fr 1fr}.compare-summary{grid-template-columns:1fr}.compare-controls .wide{grid-column:1/-1}}
+
+
+  .report-controls{display:grid;grid-template-columns:repeat(5,minmax(140px,1fr));gap:12px;align-items:end}.report-controls .wide{grid-column:span 2}.report-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:16px 0}.report-kpis .mini-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}.report-kpis .mini-stat span{display:block;color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:.06em}.report-kpis .mini-stat b{display:block;font-size:24px;margin-top:4px}.selected-row{background:rgba(51,181,108,.07)}
+  @media(max-width:900px){.report-controls{grid-template-columns:1fr 1fr}.report-controls .wide{grid-column:span 2}.report-kpis{grid-template-columns:1fr 1fr}}
+
+/* ===== Executive Showcase v6 ===== */
+:root{--bg:#070a10;--surface:#0d131d;--surface-2:#121b28;--border:#253244;--border-soft:#192435;--text:#f3f6fa;--text-dim:#9eacbd;--text-faint:#66768a;--accent:#e31837;--accent-hover:#ff2948;--good:#45d483;--warn:#f0b84c;--radius:14px}
+body{background:radial-gradient(1000px 600px at 10% -10%,rgba(227,24,55,.12),transparent 55%),radial-gradient(900px 500px at 100% 10%,rgba(63,103,255,.07),transparent 55%),var(--bg);letter-spacing:-.005em}
+header.topbar{position:sticky;top:0;z-index:50;background:rgba(13,19,29,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 8px 30px rgba(0,0,0,.22)}
+.topbar-inner,.tabs-inner,main{max-width:1440px}.topbar-inner{padding:16px 30px}.brand .dot{box-shadow:0 0 18px rgba(227,24,55,.65)}.brand-text h2{font-size:16px}.brand-text span{letter-spacing:.04em;text-transform:uppercase}
+nav.tabs{position:sticky;top:67px;z-index:45;background:rgba(13,19,29,.92);backdrop-filter:blur(16px)}.tabs-inner{padding:0 30px}.tab-btn{padding:14px 3px;margin-right:26px;transition:.2s}.tab-btn.active{color:#fff}.tab-btn:hover{transform:translateY(-1px)}
+main{padding:34px 30px 80px}.section-title{font-size:21px!important}.section-sub{font-size:13.5px!important;margin-bottom:24px!important}
+.panel-block,.forwarder-card,.stat,.hero-card,.mini-stat{box-shadow:0 16px 45px rgba(0,0,0,.16)}.panel-block{border-radius:16px;overflow:hidden}.panel-block .pb-head{padding:16px 20px;background:linear-gradient(180deg,rgba(255,255,255,.018),transparent)}.panel-block .pb-body{padding:20px}
+.stat-row{border-radius:16px;gap:1px}.stat{padding:22px 22px}.stat .num{font-size:30px}.stat .label{margin-top:6px;letter-spacing:.08em}
+.hero-strip{grid-template-columns:1.55fr .45fr;gap:18px}.hero-card{border-radius:18px;padding:28px;background:linear-gradient(135deg,rgba(227,24,55,.10),rgba(18,27,40,.94) 45%,rgba(18,27,40,.98));position:relative;overflow:hidden}.hero-card:after{content:'';position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(227,24,55,.08);right:-90px;top:-120px}.hero-card h3{font-size:28px}.hero-kpi .big{font-size:34px}
+.btn{border-radius:9px;transition:transform .16s ease,box-shadow .16s ease,background .16s}.btn:hover{transform:translateY(-1px)}.btn-primary{box-shadow:0 8px 22px rgba(227,24,55,.20)}
+.form-grid input,.form-grid select,.form-grid textarea,.toolbar select,.toolbar input[type=text],.compare-controls input,.compare-controls select{border-radius:9px;min-height:42px;transition:border-color .16s,box-shadow .16s}.form-grid input:focus,.form-grid select:focus,.form-grid textarea:focus,.compare-controls input:focus,.compare-controls select:focus{border-color:rgba(227,24,55,.8);box-shadow:0 0 0 3px rgba(227,24,55,.10);outline:none}
+th{padding:11px 13px;background:rgba(255,255,255,.018)}td{padding:13px}.table-wrap{scrollbar-width:thin}.best-row,.rank1{box-shadow:inset 3px 0 0 var(--good)}
+.badge{border-radius:999px;padding:4px 9px}.fw-grid{grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:16px}.forwarder-card{border-radius:15px;padding:18px 20px;transition:transform .18s,border-color .18s}.forwarder-card:hover{transform:translateY(-2px);border-color:#3a4a60}
+.login-card{max-width:430px;padding:44px 42px 36px;border-radius:20px;background:rgba(13,19,29,.94);backdrop-filter:blur(18px);box-shadow:0 35px 100px rgba(0,0,0,.52)}.login-card h1{font-size:27px}.login-mark{margin-bottom:30px}.login-mark .dot{box-shadow:0 0 20px rgba(227,24,55,.7)}
+#login-screen:before{content:'RATE INTELLIGENCE';position:absolute;left:5vw;bottom:7vh;font:800 clamp(46px,8vw,120px)/.9 var(--sans);letter-spacing:-.06em;color:rgba(255,255,255,.018);white-space:nowrap}
+.quote-row{padding:8px;border:1px solid transparent;border-radius:10px}.quote-row:hover{background:rgba(255,255,255,.018);border-color:var(--border-soft)}
+.report-kpis .mini-stat{border-radius:15px!important}.report-kpis .mini-stat b{font-family:var(--mono)}
+footer.appfoot{background:rgba(13,19,29,.55);letter-spacing:.04em}
+@media(max-width:760px){main{padding:24px 16px 60px}.topbar-inner,.tabs-inner{padding-left:16px;padding-right:16px}nav.tabs{top:96px}.hero-card h3{font-size:23px}}
+
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="login-screen">
+  <svg id="login-routes" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice">
+    <g fill="none" stroke="#3a4453" stroke-width="1">
+      <path d="M60,470 C220,380 300,520 470,400 C600,320 700,360 840,220" stroke-dasharray="2 7"/>
+      <path d="M100,120 C260,220 360,90 520,180 C640,250 760,150 860,260" stroke-dasharray="2 7"/>
+      <path d="M20,260 C180,300 260,200 420,260 C560,310 660,220 820,300" stroke-dasharray="2 7"/>
+    </g>
+    <g fill="#d81e3f" opacity=".55">
+      <circle cx="60" cy="470" r="3"/><circle cx="470" cy="400" r="3"/><circle cx="840" cy="220" r="3"/>
+      <circle cx="100" cy="120" r="3"/><circle cx="520" cy="180" r="3"/><circle cx="860" cy="260" r="3"/>
+      <circle cx="20" cy="260" r="3"/><circle cx="420" cy="260" r="3"/><circle cx="820" cy="300" r="3"/>
+    </g>
+  </svg>
+  <div class="login-card">
+    <div class="login-mark">
+      <span class="dot"></span>
+      <span class="wordmark">Broadcom &nbsp;·&nbsp; Logistics FP&amp;A</span>
+    </div>
+    <h1>Rate Comparison Tracker</h1>
+    <p class="sub">Sign in with your employee ID to log and compare forwarder rates.</p>
+    <div class="login-error" id="login-error"></div>
+    <form id="login-form">
+      <div class="field">
+        <label for="li-id">Employee ID</label>
+        <input type="text" id="li-id" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="li-pw">Password</label>
+        <input type="password" id="li-pw" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="login-btn">Sign in</button>
+    </form>
+    <div class="login-foot">
+      First time here? Ask your admin to add your employee ID under Team.
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="dot"></span>
+        <div class="brand-text">
+          <h2>Rate Comparison Tracker</h2>
+          <span>Broadcom Logistics · Rate Intelligence</span>
+        </div>
+      </div>
+      <div class="who">
+        <span class="name">Signed in as <b id="who-name">—</b></span>
+        <span class="role-badge" id="who-role">member</span>
+        <button class="btn btn-ghost btn-sm" id="logout-btn">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <div class="tabs-inner" id="tab-nav">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="log">Log a Rate</button>
+      <button class="tab-btn" data-tab="compare">Rate Comparison</button>
+      <button class="tab-btn" data-tab="forwarders">Team &amp; Forwarders</button>
+      <button class="tab-btn" data-tab="activity">Activity</button>
+      <button class="tab-btn" data-tab="reports">Reports & Export</button>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- OVERVIEW -->
+    <section class="panel active" id="panel-overview">
+      <h3 class="section-title">Overview</h3>
+      <p class="section-sub">Executive view of sourcing activity, selected forwarders and rate intelligence across the team.</p>
+      <div class="stat-row">
+        <div class="stat"><div class="num" id="stat-forwarders">0</div><div class="label">Forwarders tracked</div></div>
+        <div class="stat"><div class="num" id="stat-entries">0</div><div class="label">Rates logged</div></div>
+        <div class="stat"><div class="num" id="stat-lanes">0</div><div class="label">Lanes covered</div></div>
+        <div class="stat"><div class="num" id="stat-mine">0</div><div class="label">Logged by you</div></div>
+      </div>
+      <div class="panel-block">
+        <div class="pb-head">
+          <h4>By shipment type</h4>
+        </div>
+        <div class="pb-body table-wrap">
+          <table id="shipment-type-table-overview">
+            <thead><tr><th>Type</th><th>Lanes</th><th>Chosen total cost</th></tr></thead>
+            <tbody class="shipment-type-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel-block">
+        <div class="pb-head">
+          <h4>Projects — selected best rate (XTPL &amp; BRCM)</h4>
+        </div>
+        <div class="pb-body table-wrap">
+          <table id="overview-best-table">
+            <thead><tr><th>Project</th><th>Type</th><th>Lane</th><th>Selected forwarder</th><th>Best rate</th><th># quoted</th><th>Logged by</th><th>Date</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel-block">
+        <div class="pb-head">
+          <h4>Quotes logged by team member</h4>
+        </div>
+        <div class="pb-body table-wrap">
+          <table id="quotes-by-person-table">
+            <thead><tr><th>Team member</th><th>Quotes logged</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- RATE COMPARISON -->
+    <section class="panel" id="panel-compare">
+      <div class="hero-strip">
+        <div class="hero-card"><h3>Forwarder Rate Intelligence</h3><p>Compare every quotation in one executive control view — ranked by total cost, traceable by project, lane and team member.</p></div>
+        <div class="hero-card hero-kpi"><span class="session-chip">CURRENT BEST SAVING</span><div class="big" id="compare-saving">—</div></div>
+      </div>
+      <div class="panel-block"><div class="pb-head"><h4>Find a comparison</h4><span class="badge badge-neutral">Team data</span></div><div class="pb-body">
+        <div class="compare-controls">
+          <div class="wide"><label>Lane / shipment search</label><input id="cmp-search" type="text" placeholder="Search lane, invoice, BPO, shipper or consignee"></div>
+          <div><label>Shipment type</label><select id="cmp-type"><option value="">All</option><option>XTPL</option><option>BRCM</option></select></div>
+          <div><label>Mode</label><select id="cmp-mode"><option value="">All</option><option>Air</option><option>Trucking</option><option>Courier</option><option>Multimodal</option></select></div>
+          <div><label>Team member</label><select id="cmp-person"><option value="">All</option></select></div>
+          <button class="btn btn-ghost" id="cmp-clear">Clear</button>
+        </div>
+      </div></div>
+      <div class="compare-summary"><div class="mini-stat"><span>Quotes shown</span><b id="cmp-count">0</b></div><div class="mini-stat"><span>Forwarders</span><b id="cmp-fw">0</b></div><div class="mini-stat"><span>Lanes</span><b id="cmp-lanes">0</b></div></div>
+      <div class="panel-block"><div class="pb-head"><h4>Ranked forwarder totals</h4><button class="btn btn-ghost btn-sm" id="export-compare-btn">Export comparison CSV</button></div><div class="pb-body table-wrap">
+        <table id="comparison-table"><thead><tr><th>Rank</th><th>Lane</th><th>Forwarder</th><th>Total rate</th><th>Saving vs highest</th><th>Transit</th><th>Type</th><th>Mode</th><th>Logged by</th><th>Date</th></tr></thead><tbody></tbody></table>
+      </div></div>
+    </section>
+
+    <!-- FORWARDERS -->
+    <section class="panel" id="panel-forwarders">
+      <h3 class="section-title">Team &amp; Forwarders</h3>
+      <p class="section-sub">Manage your forwarder master list and, for admins, team access from one page.</p>
+      <div class="toolbar">
+        <span class="badge badge-neutral" id="fw-count-badge">0 forwarders</span>
+        <div class="spacer"></div>
+        <button class="btn btn-primary btn-sm" id="add-forwarder-btn">+ Add forwarder</button>
+      </div>
+      <div class="fw-grid" id="forwarder-grid"></div>
+      <!-- TEAM MANAGEMENT (admin only) -->
+      <div id="team-management" style="display:none;margin-top:28px;">
+        <h3 class="section-title">Team Management</h3>
+      <p class="section-sub">Manage who can sign in to this tracker.</p>
+      <div class="panel-block">
+        <div class="pb-head"><h4>Add a team member</h4></div>
+        <div class="pb-body">
+          <form id="employee-form">
+            <div class="form-grid">
+              <div><label for="em-id">Employee ID</label><input type="text" id="em-id" required></div>
+              <div><label for="em-name">Full name</label><input type="text" id="em-name" required></div>
+              <div><label for="em-pw">Temporary password</label><input type="text" id="em-pw" required></div>
+              <div><label for="em-role">Role</label>
+                <select id="em-role"><option value="member">Member</option><option value="admin">Admin</option></select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Add team member</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="team-table">
+          <thead><tr><th>Employee ID</th><th>Name</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      </div>
+    </section>
+
+    <!-- LOG A RATE -->
+    <section class="panel" id="panel-log">
+      <h3 class="section-title">Log a Rate</h3>
+      <p class="section-sub">Record rates from every forwarder quoting on a lane in one go.</p>
+      <div class="panel-block">
+        <div class="pb-body">
+          <form id="entry-form">
+            <div class="form-section-label">Comparison / project</div>
+            <div class="form-grid">
+              <div class="full">
+                <label for="ef-project-title">Project / activity title</label>
+                <input type="text" id="ef-project-title" placeholder="e.g. Taiwan urgent shipment / September spot quote" required>
+              </div>
+              <div>
+                <label for="ef-comparison-ref">Comparison ID</label>
+                <input type="text" id="ef-comparison-ref" placeholder="Auto-generated when saved" readonly>
+              </div>
+              <div>
+                <label for="ef-selection-reason">Selection reason / remark</label>
+                <input type="text" id="ef-selection-reason" placeholder="e.g. Lowest total cost / capacity / transit">
+              </div>
+            </div>
+            <div class="form-section-label" style="margin-top:22px;">Lane details</div>
+            <div class="form-grid">
+              <div>
+                <label for="ef-shipment-type">Shipment type</label>
+                <select id="ef-shipment-type">
+                  <option value="XTPL">XTPL</option>
+                  <option value="BRCM">BRCM</option>
+                </select>
+              </div>
+              <div>
+                <label for="ef-div">Division</label>
+                <input type="text" id="ef-div" placeholder="Team enters division, e.g. WCC / NIC / Custom">
+              </div>
+              <div>
+                <label for="ef-mode">Mode</label>
+                <select id="ef-mode">
+                  <option>Air</option><option>Trucking</option><option>Courier</option><option>Multimodal</option>
+                </select>
+              </div>
+              <div>
+                <label for="ef-currency">Currency</label>
+                <input type="text" id="ef-currency" value="USD" list="currency-list" maxlength="6">
+                <datalist id="currency-list">
+                  <option value="USD"><option value="MYR"><option value="SGD">
+                  <option value="TWD"><option value="CNY"><option value="EUR">
+                </datalist>
+              </div>
+              <div>
+                <label for="ef-origin">Origin</label>
+                <input type="text" id="ef-origin" placeholder="e.g. Penang, MY">
+              </div>
+              <div>
+                <label for="ef-dest">Destination</label>
+                <input type="text" id="ef-dest" placeholder="e.g. San Jose, US">
+              </div>
+              <div class="full">
+                <label for="ef-lane">Lane name</label>
+                <input type="text" id="ef-lane" placeholder="Auto: Origin → Destination" required readonly>
+                <div class="input-hint">Automatically created from Origin and Destination.</div>
+              </div>
+              <div>
+                <label for="ef-valid-from">Rate valid from</label>
+                <input type="date" id="ef-valid-from">
+              </div>
+              <div>
+                <label for="ef-valid-to">Rate valid to</label>
+                <input type="date" id="ef-valid-to">
+              </div>
+              <div class="full">
+                <label for="ef-notes">Notes</label>
+                <textarea id="ef-notes" placeholder="Anything worth flagging — capacity, surcharges, conditions..."></textarea>
+              </div>
+            </div>
+
+            <div class="form-section-label" style="margin-top:22px;">Shipment reference</div>
+            <div class="form-grid">
+              <div>
+                <label for="ef-shipper">Shipper</label>
+                <input type="text" id="ef-shipper">
+              </div>
+              <div>
+                <label for="ef-consignee">Consignee</label>
+                <input type="text" id="ef-consignee">
+              </div>
+              <div>
+                <label for="ef-invoice">Invoice #</label>
+                <input type="text" id="ef-invoice">
+              </div>
+              <div>
+                <label for="ef-bpo">BPO#</label>
+                <input type="text" id="ef-bpo">
+              </div>
+              <div>
+                <label for="ef-ship-date">Ship date</label>
+                <input type="date" id="ef-ship-date">
+              </div>
+              <div>
+                <label for="ef-status">Status</label>
+                <select id="ef-status">
+                  <option>Pending</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option>
+                </select>
+              </div>
+              <div>
+                <label for="ef-cost-center">BU cost center</label>
+                <input type="text" id="ef-cost-center">
+              </div>
+              <div>
+                <label for="ef-requestor">Requestor name</label>
+                <input type="text" id="ef-requestor">
+              </div>
+            </div>
+
+            <div class="form-section-label" style="margin-top:22px;">Forwarder rate comparison</div>
+            <div class="quote-count-row">
+              <div>
+                <label for="ef-quote-count">Number of forwarders quoting</label>
+                <p class="quote-count-hint">Aim for at least 3, so the lowest cost is a real comparison.</p>
+              </div>
+              <div class="count-stepper">
+                <button type="button" id="qc-minus" aria-label="Remove a forwarder row">−</button>
+                <input type="number" id="ef-quote-count" min="1" max="12" value="3">
+                <button type="button" id="qc-plus" aria-label="Add a forwarder row">+</button>
+              </div>
+            </div>
+            <div class="quote-table">
+              <div class="quote-head">
+                <span>Forwarder</span><span>Forwarder total rate</span><span>Transit (d)</span><span></span>
+              </div>
+              <div id="quote-rows"></div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="entry-submit-btn">Log rates</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="panel-block">
+        <div class="pb-head">
+          <h4>Chosen rate per lane</h4>
+          <button class="btn btn-ghost btn-sm" id="export-chosen-btn">Export CSV</button>
+        </div>
+        <div class="pb-body table-wrap">
+          <table id="chosen-lane-table">
+            <thead>
+              <tr>
+                <th>Lane</th><th>Div</th><th>Type</th><th>Forwarder</th><th>Total cost</th><th># quoted</th>
+                <th>Shipper</th><th>Consignee</th><th>Invoice #</th><th>BPO#</th><th>Ship date</th><th>Status</th><th>Cost center</th><th>Requestor</th>
+                <th>Logged by</th><th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPORTS & EXPORT -->
+    <section class="panel" id="panel-reports">
+      <h3 class="section-title">Management Reports & Export</h3>
+      <p class="section-sub">Filter daily transactional rate comparisons by month, year, YTD or any date range. Export is pivot-ready: one row per forwarder quote.</p>
+      <div class="panel-block"><div class="pb-head"><h4>Report filters</h4><span class="badge badge-neutral">Pivot-ready</span></div><div class="pb-body">
+        <div class="report-controls">
+          <div><label>Period</label><select id="rpt-period"><option value="month">Month</option><option value="year">Year</option><option value="ytd">Year to date</option><option value="custom">Custom date range</option><option value="all">All history</option></select></div>
+          <div><label>Month</label><input type="month" id="rpt-month"></div>
+          <div><label>Year</label><select id="rpt-year"></select></div>
+          <div><label>From</label><input type="date" id="rpt-from"></div>
+          <div><label>To</label><input type="date" id="rpt-to"></div>
+          <div><label>Division</label><select id="rpt-div"><option value="">All divisions</option></select></div>
+          <div><label>Team member</label><select id="rpt-person"><option value="">All</option></select></div>
+          <div><label>Forwarder</label><select id="rpt-fw"><option value="">All</option></select></div>
+          <div class="wide"><label>Search project / lane / invoice / BPO</label><input type="text" id="rpt-search" placeholder="Search..."></div>
+          <button class="btn btn-primary" type="button" id="rpt-run">Run report</button>
+        </div>
+      </div></div>
+      <div class="report-kpis">
+        <div class="mini-stat"><span>Transactions</span><b id="rpt-transactions">0</b></div>
+        <div class="mini-stat"><span>Quotes</span><b id="rpt-quotes">0</b></div>
+        <div class="mini-stat"><span>XTPL</span><b id="rpt-ast">0</b></div>
+        <div class="mini-stat"><span>BRCM</span><b id="rpt-brcm">0</b></div>
+        <div class="mini-stat"><span>Team members</span><b id="rpt-people">0</b></div>
+      </div>
+      <div class="panel-block"><div class="pb-head"><h4>Transactional summary</h4><div><button class="btn btn-ghost btn-sm" id="rpt-export-summary">Export Summary CSV</button> <button class="btn btn-ghost btn-sm" id="rpt-export-detail">Export Pivot CSV</button> <button class="btn btn-primary btn-sm" id="rpt-export-excel">Export Excel (.xlsx)</button></div></div><div class="pb-body table-wrap">
+        <table id="report-table"><thead><tr><th>Date</th><th>Comparison ID</th><th>Project</th><th>Division</th><th>Lane</th><th>Selected forwarder</th><th>Selected total</th><th># quotes</th><th>Reason</th><th>Team member</th></tr></thead><tbody></tbody></table>
+      </div></div>
+    </section>
+
+    <!-- ACTIVITY -->
+    <section class="panel" id="panel-activity">
+      <h3 class="section-title">Activity</h3>
+      <p class="section-sub">Every lane quoted, by whom and when — plus a full change log below.</p>
+
+      <div class="panel-block">
+        <div class="pb-head"><h4>XTPL Activity</h4><span class="badge badge-xtpl" id="activity-xtpl-count">0 transactions</span></div>
+        <div class="pb-body table-wrap">
+          <table id="lanes-quoted-xtpl-table">
+            <thead><tr><th>Date</th><th>Project</th><th>Lane</th><th>Div</th><th>Shipper</th><th>Consignee</th><th>Invoice #</th><th>BPO#</th><th>Ship date</th><th>Status</th><th>Cost center</th><th>Requestor</th><th>Logged by</th><th># forwarders</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-block">
+        <div class="pb-head"><h4>BRCM Activity</h4><span class="badge badge-brcm" id="activity-brcm-count">0 transactions</span></div>
+        <div class="pb-body table-wrap">
+          <table id="lanes-quoted-brcm-table">
+            <thead><tr><th>Date</th><th>Project</th><th>Lane</th><th>Div</th><th>Shipper</th><th>Consignee</th><th>Invoice #</th><th>BPO#</th><th>Ship date</th><th>Status</th><th>Cost center</th><th>Requestor</th><th>Logged by</th><th># forwarders</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-block">
+        <div class="pb-head"><h4>All changes</h4></div>
+        <div class="pb-body table-wrap">
+          <table id="activity-table">
+            <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Detail</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+
+  </main>
+
+  <footer class="appfoot">Broadcom Logistics · Rate Intelligence Platform</footer>
+</div>
+
+<!-- ============ MODALS ============ -->
+<div class="modal-backdrop" id="forwarder-modal">
+  <div class="modal">
+    <h4 id="fw-modal-title">Add forwarder</h4>
+    <p class="modal-sub">Any forwarder your team has approached, regardless of mode.</p>
+    <form id="forwarder-form">
+      <input type="hidden" id="fw-id">
+      <div class="form-grid">
+        <div class="full"><label for="fw-name">Forwarder name</label><input type="text" id="fw-name" required></div>
+        <div><label for="fw-mode">Primary mode</label>
+          <select id="fw-mode"><option>Air</option><option>Trucking</option><option>Courier</option><option>Multimodal</option></select>
+        </div>
+        <div><label for="fw-status">Status</label>
+          <select id="fw-status"><option>Active</option><option>Inactive</option><option>Blacklisted</option></select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" id="fw-cancel-btn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save forwarder</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast-stack"></div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const SUPABASE_URL = 'https://gbgxejgscquaovrxelfr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdiZ3hlamdzY3F1YW92cnhlbGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2NDY4NzEsImV4cCI6MjEwMjIyMjg3MX0.nngpDcJDtPbC1K0HWBmH-BfHY8iqRcHXrxKMtY_nCBQ';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let currentUser = null;   // { employee_id, full_name, role }
+let forwarders = [];
+let entries = [];
+let employees = [];
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function escapeHtml(str){
+  if(str===null||str===undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+async function sha256Hex(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function formatRate(rate, currency){
+  if(rate===null || rate===undefined || rate==='') return '—';
+  const num = Number(rate);
+  try{
+    return new Intl.NumberFormat(undefined,{style:'currency', currency: (currency||'USD').toUpperCase(), minimumFractionDigits:2, maximumFractionDigits:4}).format(num);
+  }catch(e){
+    return `${(currency||'').toUpperCase()} ${num.toFixed(3)}`;
+  }
+}
+function formatDate(d){
+  if(!d) return '—';
+  const dt = new Date(d);
+  if(isNaN(dt.getTime())) return '—';
+  return dt.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+}
+function formatDateTime(d){
+  if(!d) return '—';
+  const dt = new Date(d);
+  if(isNaN(dt.getTime())) return '—';
+  return dt.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function statusBadgeClass(status){
+  if(status === 'Delivered') return 'badge-good';
+  if(status === 'Cancelled') return 'badge-danger';
+  if(status === 'Shipped') return 'badge-warn';
+  return 'badge-neutral'; // Pending
+}
+function toast(msg, type){
+  const stack = document.getElementById('toast-stack');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  stack.appendChild(el);
+  setTimeout(()=>{ el.remove(); }, 4200);
+}
+function downloadCSV(filename, rows){
+  const csv = rows.map(r => r.map(cell => {
+    const s = (cell===null||cell===undefined) ? '' : String(cell);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function downloadExcelReport(){
+  if(typeof XLSX === 'undefined'){
+    toast('Excel export library could not load. Check your internet connection and try again.', 'err');
+    return;
+  }
+  const detailRows = reportCsvDetail();
+  const summaryRows = reportCsvSummary();
+  if(!detailRows || detailRows.length <= 1){
+    toast('No report data to export for the selected filters.', 'err');
+    return;
+  }
+  const wb = XLSX.utils.book_new();
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+  const wsDetail = XLSX.utils.aoa_to_sheet(detailRows);
+  wsSummary['!freeze'] = {xSplit:0,ySplit:1};
+  wsDetail['!freeze'] = {xSplit:0,ySplit:1};
+  wsSummary['!autofilter'] = {ref: wsSummary['!ref']};
+  wsDetail['!autofilter'] = {ref: wsDetail['!ref']};
+  const fitWidths = (ws, rows) => {
+    const widths=[];
+    rows.forEach(row => row.forEach((v,i)=>{
+      const n=Math.min(42, Math.max(10, String(v ?? '').length + 2));
+      widths[i]={wch:Math.max(widths[i]?.wch||0,n)};
+    }));
+    ws['!cols']=widths;
+  };
+  fitWidths(wsSummary, summaryRows);
+  fitWidths(wsDetail, detailRows);
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Management Summary');
+  XLSX.utils.book_append_sheet(wb, wsDetail, 'Pivot Data');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `Rate_Comparison_Report_${stamp}.xlsx`);
+  toast('Excel report exported with Summary and Pivot Data sheets.', 'ok');
+}
+
+function employeeName(id){
+  const e = employees.find(x => x.employee_id === id);
+  return e ? e.full_name : id;
+}
+function isRateCurrentlyValid(entry){
+  if(!entry.valid_to) return true;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const vt = new Date(entry.valid_to);
+  return vt >= today;
+}
+
+async function logAudit(action, tableName, recordId, details){
+  try{
+    await sb.from('rate_tracker_audit_log').insert({
+      table_name: tableName, record_id: recordId, action,
+      employee_id: currentUser.employee_id, employee_name: currentUser.full_name,
+      details: details || null
+    });
+  }catch(e){ /* non-fatal */ }
+}
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+document.getElementById('login-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const idVal = document.getElementById('li-id').value.trim();
+  const pwVal = document.getElementById('li-pw').value;
+  const errBox = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  errBox.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  try{
+    const { data, error } = await sb.from('rate_tracker_employees')
+      .select('*').eq('employee_id', idVal).eq('active', true).maybeSingle();
+    if(error) throw error;
+    if(!data){ throw new Error('Employee ID or password is incorrect.'); }
+    const hash = await sha256Hex(pwVal);
+    if(hash !== data.password){ throw new Error('Employee ID or password is incorrect.'); }
+    currentUser = { employee_id: data.employee_id, full_name: data.full_name, role: data.role };
+    sb.from('rate_tracker_employees').update({ last_login: new Date().toISOString() }).eq('employee_id', data.employee_id).then(()=>{});
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('who-name').textContent = currentUser.full_name;
+    document.getElementById('who-role').textContent = currentUser.role;
+    const teamMgmt = document.getElementById('team-management');
+    if(teamMgmt) teamMgmt.style.display = currentUser.role === 'admin' ? '' : 'none';
+    await loadAll();
+  }catch(err){
+    errBox.textContent = err.message || 'Sign-in failed. Try again.';
+    errBox.style.display = 'block';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click', ()=>{
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-form').reset();
+});
+
+/* ============================================================
+   TABS
+   ============================================================ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> showTab(btn.dataset.tab));
+});
+document.querySelectorAll('[data-tab-link]').forEach(btn=>{
+  btn.addEventListener('click', ()=> showTab(btn.dataset.tabLink));
+});
+function showTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+}
+
+/* Auto-build lane name from Origin and Destination */
+function updateLaneFromOriginDestination(){
+  const origin = document.getElementById('ef-origin').value.trim();
+  const destination = document.getElementById('ef-dest').value.trim();
+  const lane = document.getElementById('ef-lane');
+  lane.value = origin && destination ? `${origin} → ${destination}` : (origin || destination);
+}
+['ef-origin','ef-dest'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateLaneFromOriginDestination);
+  document.getElementById(id).addEventListener('change', updateLaneFromOriginDestination);
+});
+
+/* ============================================================
+   DATA LOADING
+   ============================================================ */
+async function loadAll(){
+  await Promise.all([loadEmployees(), loadForwarders(), loadEntries()]);
+  renderOverview();
+  renderForwarders();
+  populateForwarderSelects();
+  renderShipmentTypeSummary();
+  renderChosenLaneTable();
+  renderQuotesByPerson();
+  renderLanesQuoted();
+  await renderActivity();
+  if(currentUser.role === 'admin'){ renderTeam(); }
+}
+
+async function loadEmployees(){
+  const { data, error } = await sb.from('rate_tracker_employees').select('*').order('full_name');
+  if(!error) employees = data || [];
+}
+async function loadForwarders(){
+  const { data, error } = await sb.from('rate_tracker_forwarders').select('*').order('name');
+  if(error){ toast('Could not load forwarders: ' + error.message, 'err'); return; }
+  forwarders = data || [];
+}
+async function loadEntries(){
+  const { data, error } = await sb.from('rate_tracker_entries').select('*').order('created_at', {ascending:false});
+  if(error){ toast('Could not load rate entries: ' + error.message, 'err'); return; }
+  entries = data || [];
+}
+
+/* ============================================================
+   OVERVIEW
+   ============================================================ */
+function renderOverview(){
+  document.getElementById('stat-forwarders').textContent = forwarders.length;
+  document.getElementById('stat-entries').textContent = entries.length;
+  const lanes = new Set(entries.map(e => (e.lane||'').trim().toLowerCase()).filter(Boolean));
+  document.getElementById('stat-lanes').textContent = lanes.size;
+  document.getElementById('stat-mine').textContent = entries.filter(e => e.submitted_by === currentUser.employee_id).length;
+
+  // Management overview: one row per project/comparison, showing the lowest selected rate.
+  // Keep XTPL and BRCM visible as the two shipment types, while Division remains team-entered.
+  const groups = {};
+  entries.forEach(e => { const k = txKey(e); (groups[k] ??= []).push(e); });
+  const rows = Object.values(groups).map(g => {
+    const valid = g.filter(e => e.quoted_cost !== null && e.quoted_cost !== undefined && e.quoted_cost !== '');
+    if(!valid.length) return null;
+    const best = valid.reduce((a,b)=>Number(a.quoted_cost)<=Number(b.quoted_cost)?a:b);
+    const meta = metaFromEntry(g[0]);
+    const fw = forwarders.find(f=>f.id===best.forwarder_id);
+    return { project:meta.project||'Legacy entry', type:g[0].shipment_type||'—', lane:g[0].lane||'—',
+      fwName:fw?fw.name:'—', rate:formatRate(best.quoted_cost,best.currency), count:g.length,
+      person:g[0].submitted_by_name||employeeName(g[0].submitted_by), date:g[0].created_at };
+  }).filter(Boolean).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  const tbody = document.querySelector('#overview-best-table tbody');
+  if(rows.length === 0){
+    tbody.innerHTML = `<tr><td colspan="8" class="table-empty">No projects logged yet. Log your first comparison to see it here.</td></tr>`;
+  }else{
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td><b>${escapeHtml(r.project)}</b></td>
+        <td><span class="badge ${r.type==='XTPL'?'badge-xtpl':'badge-brcm'}">${escapeHtml(r.type)}</span></td>
+        <td>${escapeHtml(r.lane)}</td>
+        <td>${escapeHtml(r.fwName)}</td>
+        <td class="num-cell">${escapeHtml(r.rate)}</td>
+        <td class="num-cell">${r.count}</td>
+        <td>${escapeHtml(r.person||'—')}</td>
+        <td>${formatDate(r.date)}</td>
+      </tr>`).join('');
+  }
+}
+
+/* ============================================================
+   FORWARDERS
+   ============================================================ */
+document.getElementById('add-forwarder-btn').addEventListener('click', ()=> openForwarderModal());
+document.getElementById('fw-cancel-btn').addEventListener('click', ()=> closeForwarderModal());
+
+function openForwarderModal(existing){
+  document.getElementById('fw-modal-title').textContent = existing ? 'Edit forwarder' : 'Add forwarder';
+  document.getElementById('fw-id').value = existing ? existing.id : '';
+  document.getElementById('fw-name').value = existing ? existing.name : '';
+  document.getElementById('fw-mode').value = existing ? existing.mode : 'Air';
+  document.getElementById('fw-status').value = existing ? existing.status : 'Active';
+  document.getElementById('forwarder-modal').classList.add('open');
+}
+function closeForwarderModal(){
+  document.getElementById('forwarder-modal').classList.remove('open');
+  document.getElementById('forwarder-form').reset();
+}
+document.getElementById('forwarder-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const id = document.getElementById('fw-id').value;
+  const payload = {
+    name: document.getElementById('fw-name').value.trim(),
+    mode: document.getElementById('fw-mode').value,
+    status: document.getElementById('fw-status').value,
+    updated_at: new Date().toISOString()
+  };
+  try{
+    if(id){
+      const { error } = await sb.from('rate_tracker_forwarders').update(payload).eq('id', id);
+      if(error) throw error;
+      await logAudit('update', 'rate_tracker_forwarders', id, {name: payload.name});
+      toast('Forwarder updated.', 'ok');
+    }else{
+      payload.created_by = currentUser.employee_id;
+      const { data, error } = await sb.from('rate_tracker_forwarders').insert(payload).select().maybeSingle();
+      if(error) throw error;
+      await logAudit('insert', 'rate_tracker_forwarders', data ? data.id : null, {name: payload.name});
+      toast('Forwarder added.', 'ok');
+    }
+    closeForwarderModal();
+    await loadForwarders();
+    renderForwarders(); renderOverview(); populateForwarderSelects(); renderChosenLaneTable();
+  }catch(err){
+    toast(err.message.includes('duplicate') ? 'That forwarder name is already tracked.' : ('Could not save forwarder: ' + err.message), 'err');
+  }
+});
+
+
+function renderForwarders(){
+  document.getElementById('fw-count-badge').textContent = forwarders.length + (forwarders.length === 1 ? ' forwarder' : ' forwarders');
+  const grid = document.getElementById('forwarder-grid');
+  if(forwarders.length === 0){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <div class="big">No forwarders yet</div>
+      Add the first one your team has approached.
+    </div>`;
+    return;
+  }
+  grid.innerHTML = forwarders.map(f=>{
+    const count = entries.filter(e => e.forwarder_id === f.id).length;
+    const statusBadge = f.status === 'Active' ? 'badge-good' : (f.status === 'Blacklisted' ? 'badge-danger' : 'badge-warn');
+    return `
+      <div class="forwarder-card">
+        <div class="fw-top">
+          <div>
+            <div class="fw-name">${escapeHtml(f.name)}</div>
+            <div class="fw-meta">${escapeHtml(f.mode)} · ${count} rate${count===1?'':'s'} logged</div>
+          </div>
+          <span class="badge ${statusBadge}">${escapeHtml(f.status)}</span>
+        </div>
+        ${f.contact_person ? `<div class="fw-meta">${escapeHtml(f.contact_person)}${f.contact_email ? ' · ' + escapeHtml(f.contact_email) : ''}</div>` : ''}
+        ${f.notes ? `<div class="fw-meta">${escapeHtml(f.notes)}</div>` : ''}
+        <div class="fw-actions">
+          <button class="btn btn-ghost btn-sm" onclick='editForwarder("${f.id}")'>Edit</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+window.editForwarder = function(id){
+  const f = forwarders.find(x => x.id === id);
+  if(f) openForwarderModal(f);
+};
+
+function populateForwarderSelects(){
+  const opts = forwarders.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');
+  // Refresh any quote rows already on screen so newly added forwarders show up
+  document.querySelectorAll('.qr-forwarder').forEach(sel=>{
+    const current = sel.value;
+    sel.innerHTML = forwarders.length ? opts : `<option value="">Add a forwarder first</option>`;
+    if(current) sel.value = current;
+  });
+}
+
+/* ============================================================
+   LOG A RATE — dynamic "number of forwarders quoting" rows
+   ============================================================ */
+function forwarderOptionsHtml(selectedId){
+  if(forwarders.length === 0) return `<option value="">Add a forwarder first</option>`;
+  return forwarders.map(f => `<option value="${f.id}" ${f.id===selectedId?'selected':''}>${escapeHtml(f.name)}</option>`).join('');
+}
+function buildQuoteRow(existing){
+  const row = document.createElement('div');
+  row.className = 'quote-row';
+  row.innerHTML = `
+    <select class="qr-forwarder">${forwarderOptionsHtml(existing && existing.forwarder_id)}</select>
+    <input type="number" step="0.01" class="qr-rate" placeholder="45000.00" value="${existing && existing.rate!==undefined ? existing.rate : ''}">
+    <input type="number" step="0.5" class="qr-transit" placeholder="4" value="${existing && existing.transit!==undefined ? existing.transit : ''}">
+    <button type="button" class="qr-remove" title="Remove this row">×</button>
+  `;
+  row.querySelector('.qr-remove').addEventListener('click', ()=>{
+    row.remove();
+    document.getElementById('ef-quote-count').value = document.querySelectorAll('.quote-row').length || 1;
+  });
+  return row;
+}
+function readQuoteRows(){
+  return Array.from(document.querySelectorAll('.quote-row')).map(row => ({
+    forwarder_id: row.querySelector('.qr-forwarder').value,
+    rate: row.querySelector('.qr-rate').value,
+    transit: row.querySelector('.qr-transit').value
+  }));
+}
+function renderQuoteRows(count){
+  const container = document.getElementById('quote-rows');
+  const existingData = readQuoteRows();
+  container.innerHTML = '';
+  for(let i=0; i<count; i++){
+    container.appendChild(buildQuoteRow(existingData[i]));
+  }
+}
+document.getElementById('ef-quote-count').addEventListener('change', (e)=>{
+  let n = parseInt(e.target.value, 10);
+  if(!n || n < 1) n = 1;
+  if(n > 12) n = 12;
+  e.target.value = n;
+  renderQuoteRows(n);
+});
+document.getElementById('qc-plus').addEventListener('click', ()=>{
+  const field = document.getElementById('ef-quote-count');
+  field.value = Math.min(12, (parseInt(field.value,10)||0) + 1);
+  renderQuoteRows(parseInt(field.value,10));
+});
+document.getElementById('qc-minus').addEventListener('click', ()=>{
+  const field = document.getElementById('ef-quote-count');
+  field.value = Math.max(1, (parseInt(field.value,10)||1) - 1);
+  renderQuoteRows(parseInt(field.value,10));
+});
+function resetQuoteForm(){
+  document.getElementById('ef-quote-count').value = 3;
+  renderQuoteRows(3);
+}
+// Initial rows on load
+renderQuoteRows(3);
+
+document.getElementById('entry-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  if(forwarders.length === 0){ toast('Add a forwarder before logging a rate.', 'err'); return; }
+
+  const projectTitle = document.getElementById('ef-project-title').value.trim();
+  if(!projectTitle){ toast('Enter a project / activity title first.', 'err'); return; }
+  const comparisonRef = 'RC-' + new Date().toISOString().slice(0,10).replaceAll('-','') + '-' + Math.random().toString(36).slice(2,7).toUpperCase();
+  document.getElementById('ef-comparison-ref').value = comparisonRef;
+  const selectionReason = document.getElementById('ef-selection-reason').value.trim() || 'Lowest total cost';
+  const userNotes = document.getElementById('ef-notes').value.trim();
+  const metaNotes = `[PROJECT:${projectTitle}] [REF:${comparisonRef}] [REASON:${selectionReason}]` + (userNotes ? ` ${userNotes}` : '');
+
+  const shared = {
+    shipment_type: document.getElementById('ef-shipment-type').value,
+    div: document.getElementById('ef-div').value.trim() || null,
+    mode: document.getElementById('ef-mode').value,
+    origin: document.getElementById('ef-origin').value.trim() || null,
+    destination: document.getElementById('ef-dest').value.trim() || null,
+    lane: document.getElementById('ef-lane').value.trim(),
+    currency: (document.getElementById('ef-currency').value.trim() || 'USD').toUpperCase(),
+    valid_from: document.getElementById('ef-valid-from').value || null,
+    valid_to: document.getElementById('ef-valid-to').value || null,
+    notes: metaNotes,
+    shipper: document.getElementById('ef-shipper').value.trim() || null,
+    consignee: document.getElementById('ef-consignee').value.trim() || null,
+    invoice_no: document.getElementById('ef-invoice').value.trim() || null,
+    bpo_no: document.getElementById('ef-bpo').value.trim() || null,
+    ship_date: document.getElementById('ef-ship-date').value || null,
+    status: document.getElementById('ef-status').value,
+    bu_cost_center: document.getElementById('ef-cost-center').value.trim() || null,
+    requestor_name: document.getElementById('ef-requestor').value.trim() || null,
+    submitted_by: currentUser.employee_id,
+    submitted_by_name: currentUser.full_name
+  };
+  if(!shared.lane){ toast('Enter a lane name first.', 'err'); return; }
+
+  const rows = readQuoteRows().filter(r => r.forwarder_id);
+  if(rows.length === 0){ toast('Pick at least one forwarder in the rows below.', 'err'); return; }
+  const seen = new Set();
+  for(const r of rows){
+    if(seen.has(r.forwarder_id)){ toast('The same forwarder is selected in two rows — pick a different one for each.', 'err'); return; }
+    seen.add(r.forwarder_id);
+  }
+
+  const payloads = rows.map(r => ({
+    ...shared,
+    forwarder_id: r.forwarder_id,
+    quoted_cost: r.rate !== '' ? Number(r.rate) : null,
+    transit_days: r.transit !== '' ? Number(r.transit) : null
+  }));
+
+  const btn = document.getElementById('entry-submit-btn');
+  btn.disabled = true;
+  try{
+    const { error } = await sb.from('rate_tracker_entries').insert(payloads);
+    if(error) throw error;
+    await logAudit('insert', 'rate_tracker_entries', null, {lane: shared.lane, count: payloads.length});
+    document.getElementById('entry-form').reset();
+    document.getElementById('ef-currency').value = 'USD';
+    resetQuoteForm();
+    await loadEntries();
+    renderShipmentTypeSummary(); renderChosenLaneTable(); renderOverview(); renderQuotesByPerson(); renderLanesQuoted(); renderForwarders();
+    const winner = chosenPerLane().find(r => r.lane.toLowerCase() === shared.lane.toLowerCase());
+    const winnerMsg = winner ? ` System picked ${winner.fwName} at ${formatRate(winner.entry.quoted_cost, winner.entry.currency)}.` : '';
+    toast(`Logged ${payloads.length} rate${payloads.length===1?'':'s'} for ${shared.lane}.${winnerMsg}`, 'ok');
+  }catch(err){
+    toast('Could not log rates: ' + err.message, 'err');
+  }finally{
+    btn.disabled = false;
+  }
+});
+/* Picks the lowest quoted_cost entry per lane (grouped by currency so amounts
+   are never compared across currencies). Shared by Overview, "By shipment
+   type", and "Chosen rate per lane". */
+function chosenPerLane(){
+  const byLane = {};
+  entries.forEach(e=>{
+    const key = (e.lane||'').trim();
+    if(!key) return;
+    if(!byLane[key]) byLane[key] = [];
+    byLane[key].push(e);
+  });
+  return Object.keys(byLane).sort().map(lane=>{
+    const rowsForLane = byLane[lane].filter(e => e.quoted_cost !== null && e.quoted_cost !== undefined);
+    if(rowsForLane.length === 0) return null;
+    const currencyGroups = {};
+    rowsForLane.forEach(e=>{
+      const cur = (e.currency||'USD').toUpperCase();
+      if(!currencyGroups[cur]) currencyGroups[cur] = [];
+      currencyGroups[cur].push(e);
+    });
+    const firstCur = Object.keys(currencyGroups)[0];
+    const group = currencyGroups[firstCur];
+    const best = group.reduce((a,b)=> Number(a.quoted_cost) <= Number(b.quoted_cost) ? a : b);
+    const fw = forwarders.find(f => f.id === best.forwarder_id);
+    return {
+      lane,
+      shipment_type: best.shipment_type || 'XTPL',
+      entry: best,
+      fwName: fw ? fw.name : '—',
+      quotedCount: rowsForLane.length
+    };
+  }).filter(Boolean);
+}
+
+/* Every submission "session" — one bulk Log a Rate click, which shares one
+   lane + submitter + timestamp across all its forwarder rows. Powers the
+   Activity tab's "Lanes quoted" list. */
+function quotingSessions(){
+  const groups = {};
+  entries.forEach(e=>{
+    const key = `${(e.lane||'').trim().toLowerCase()}||${e.submitted_by}||${e.created_at}`;
+    if(!groups[key]){
+      groups[key] = {
+        lane: e.lane, div: e.div, shipment_type: e.shipment_type,
+        shipper: e.shipper, consignee: e.consignee, invoice_no: e.invoice_no, bpo_no: e.bpo_no,
+        ship_date: e.ship_date, status: e.status, bu_cost_center: e.bu_cost_center, requestor_name: e.requestor_name,
+        submitted_by: e.submitted_by, submitted_by_name: e.submitted_by_name,
+        created_at: e.created_at, count: 0
+      };
+    }
+    groups[key].count++;
+  });
+  return Object.values(groups).sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+}
+
+function renderLanesQuoted(){
+  const sessions = quotingSessions();
+  const renderType = (type, tableId, countId) => {
+    const rows = sessions.filter(s => (s.shipment_type || 'XTPL') === type);
+    const tbody = document.querySelector(`#${tableId} tbody`);
+    const count = document.getElementById(countId);
+    if(count) count.textContent = `${rows.length} transaction${rows.length===1?'':'s'}`;
+    if(!tbody) return;
+    if(rows.length === 0){
+      tbody.innerHTML = `<tr><td colspan="14" class="table-empty">No ${type} activity yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(s=>{
+      const meta = metaFromEntry(s);
+      return `
+        <tr>
+          <td>${formatDateTime(s.created_at)}</td>
+          <td><b>${escapeHtml(meta.project || 'Legacy entry')}</b></td>
+          <td>${escapeHtml(s.lane)}</td>
+          <td>${escapeHtml(s.div || '—')}</td>
+          <td>${escapeHtml(s.shipper || '—')}</td>
+          <td>${escapeHtml(s.consignee || '—')}</td>
+          <td>${escapeHtml(s.invoice_no || '—')}</td>
+          <td>${escapeHtml(s.bpo_no || '—')}</td>
+          <td>${formatDate(s.ship_date)}</td>
+          <td><span class="badge ${statusBadgeClass(s.status)}">${escapeHtml(s.status || 'Pending')}</span></td>
+          <td>${escapeHtml(s.bu_cost_center || '—')}</td>
+          <td>${escapeHtml(s.requestor_name || '—')}</td>
+          <td>${escapeHtml(s.submitted_by_name || employeeName(s.submitted_by))}</td>
+          <td class="num-cell">${s.count}</td>
+        </tr>`;
+    }).join('');
+  };
+  renderType('XTPL','lanes-quoted-xtpl-table','activity-xtpl-count');
+  renderType('BRCM','lanes-quoted-brcm-table','activity-brcm-count');
+}
+function renderShipmentTypeSummary(){
+  const chosen = chosenPerLane();
+  const html = ['XTPL','BRCM'].map(t=>{
+    const badgeClass = t === 'XTPL' ? 'badge-xtpl' : 'badge-brcm';
+    const rowsForType = chosen.filter(r => r.shipment_type === t);
+    if(rowsForType.length === 0){
+      return `<tr><td><span class="badge ${badgeClass}">${t}</span></td><td class="num-cell">0</td><td class="num-cell">—</td></tr>`;
+    }
+    const byCur = {};
+    rowsForType.forEach(r=>{
+      const cur = (r.entry.currency||'USD').toUpperCase();
+      byCur[cur] = (byCur[cur]||0) + Number(r.entry.quoted_cost||0);
+    });
+    const totalStr = Object.keys(byCur).sort().map(cur => formatRate(byCur[cur], cur)).join(' + ');
+    return `<tr><td><span class="badge ${badgeClass}">${t}</span></td><td class="num-cell">${rowsForType.length}</td><td class="num-cell">${escapeHtml(totalStr)}</td></tr>`;
+  }).join('');
+  document.querySelectorAll('.shipment-type-tbody').forEach(tbody => { tbody.innerHTML = html; });
+}
+
+function renderChosenLaneTable(){
+  const chosen = chosenPerLane();
+  const tbody = document.querySelector('#chosen-lane-table tbody');
+  if(chosen.length === 0){
+    tbody.innerHTML = `<tr><td colspan="16" class="table-empty">No rates logged yet. Log your first lane above.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = chosen.map(r=>{
+    const e = r.entry;
+    const badgeClass = r.shipment_type === 'XTPL' ? 'badge-xtpl' : 'badge-brcm';
+    const canEdit = currentUser.role === 'admin' || e.submitted_by === currentUser.employee_id;
+    return `
+      <tr>
+        <td>${escapeHtml(r.lane)}</td>
+        <td>${escapeHtml(e.div || '—')}</td>
+        <td><span class="badge ${badgeClass}">${r.shipment_type}</span></td>
+        <td>${escapeHtml(r.fwName)}</td>
+        <td class="num-cell">${escapeHtml(formatRate(e.quoted_cost, e.currency))}</td>
+        <td class="num-cell">${r.quotedCount}</td>
+        <td>${escapeHtml(e.shipper || '—')}</td>
+        <td>${escapeHtml(e.consignee || '—')}</td>
+        <td>${escapeHtml(e.invoice_no || '—')}</td>
+        <td>${escapeHtml(e.bpo_no || '—')}</td>
+        <td>${formatDate(e.ship_date)}</td>
+        <td><span class="badge ${statusBadgeClass(e.status)}">${escapeHtml(e.status || 'Pending')}</span></td>
+        <td>${escapeHtml(e.bu_cost_center || '—')}</td>
+        <td>${escapeHtml(e.requestor_name || '—')}</td>
+        <td>${escapeHtml(e.submitted_by_name || employeeName(e.submitted_by))}</td>
+        <td>${canEdit ? `<button class="btn btn-ghost btn-sm" onclick='deleteEntry("${e.id}")'>Delete</button>` : ''}</td>
+      </tr>`;
+  }).join('');
+}
+
+document.getElementById('export-chosen-btn').addEventListener('click', ()=>{
+  const rows = [['Lane','Div','Type','Forwarder','Total cost','Currency','# forwarders quoted','Shipper','Consignee','Invoice #','BPO#','Ship date','Status','Cost center','Requestor','Logged by']];
+  chosenPerLane().forEach(r=>{
+    const e = r.entry;
+    rows.push([r.lane, e.div, r.shipment_type, r.fwName, e.quoted_cost, e.currency, r.quotedCount,
+      e.shipper, e.consignee, e.invoice_no, e.bpo_no, e.ship_date, e.status, e.bu_cost_center, e.requestor_name,
+      e.submitted_by_name]);
+  });
+  downloadCSV('chosen_rates_by_lane.csv', rows);
+});
+
+window.deleteEntry = async function(id){
+  if(!confirm('Delete this rate entry? This can\'t be undone — if it was the chosen (lowest) quote, the next-lowest quote for that lane takes its place.')) return;
+  try{
+    const { error } = await sb.from('rate_tracker_entries').delete().eq('id', id);
+    if(error) throw error;
+    await logAudit('delete', 'rate_tracker_entries', id, null);
+    toast('Rate entry deleted.', 'ok');
+    await loadEntries();
+    renderShipmentTypeSummary(); renderChosenLaneTable(); renderOverview(); renderQuotesByPerson(); renderLanesQuoted(); renderForwarders();
+  }catch(err){
+    toast('Could not delete: ' + err.message, 'err');
+  }
+};
+
+/* ============================================================
+   QUOTES BY TEAM MEMBER
+   ============================================================ */
+function renderQuotesByPerson(){
+  const counts = {};
+  entries.forEach(e=>{
+    const id = e.submitted_by || 'unknown';
+    const name = e.submitted_by_name || employeeName(id);
+    if(!counts[id]) counts[id] = { name, count: 0 };
+    counts[id].count++;
+  });
+  const rows = Object.values(counts).sort((a,b)=> b.count - a.count || a.name.localeCompare(b.name));
+  const tbody = document.querySelector('#quotes-by-person-table tbody');
+  if(rows.length === 0){
+    tbody.innerHTML = `<tr><td colspan="2" class="table-empty">No quotes logged yet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr><td>${escapeHtml(r.name)}</td><td class="num-cell">${r.count}</td></tr>`).join('');
+}
+
+/* ============================================================
+   ACTIVITY
+   ============================================================ */
+async function renderActivity(){
+  const { data, error } = await sb.from('rate_tracker_audit_log').select('*').order('created_at',{ascending:false}).limit(60);
+  const tbody = document.querySelector('#activity-table tbody');
+  if(error || !data || data.length === 0){
+    tbody.innerHTML = `<tr><td colspan="4" class="table-empty">No activity yet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(a=>{
+    const actionLabel = {insert:'Added', update:'Updated', delete:'Deleted'}[a.action] || a.action;
+    const tableLabel = {rate_tracker_forwarders:'a forwarder', rate_tracker_entries:'a rate', rate_tracker_employees:'a team member'}[a.table_name] || a.table_name;
+    const detail = a.details && a.details.lane ? `Lane: ${escapeHtml(a.details.lane)}` : (a.details && a.details.name ? escapeHtml(a.details.name) : '');
+    return `
+      <tr>
+        <td>${formatDateTime(a.created_at)}</td>
+        <td>${escapeHtml(a.employee_name || a.employee_id || '—')}</td>
+        <td>${actionLabel} ${tableLabel}</td>
+        <td>${detail}</td>
+      </tr>`;
+  }).join('');
+}
+
+/* ============================================================
+   TEAM (admin)
+   ============================================================ */
+document.getElementById('employee-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const id = document.getElementById('em-id').value.trim();
+  const name = document.getElementById('em-name').value.trim();
+  const pw = document.getElementById('em-pw').value;
+  const role = document.getElementById('em-role').value;
+  try{
+    const hash = await sha256Hex(pw);
+    const { error } = await sb.from('rate_tracker_employees').insert({
+      employee_id: id, full_name: name, password: hash, role, active: true
+    });
+    if(error) throw error;
+    await logAudit('insert', 'rate_tracker_employees', id, {name});
+    toast('Team member added.', 'ok');
+    document.getElementById('employee-form').reset();
+    await loadEmployees();
+    renderTeam();
+  }catch(err){
+    toast(err.message.includes('duplicate') ? 'That employee ID is already registered.' : ('Could not add team member: ' + err.message), 'err');
+  }
+});
+
+function renderTeam(){
+  const tbody = document.querySelector('#team-table tbody');
+  if(employees.length === 0){
+    tbody.innerHTML = `<tr><td colspan="6" class="table-empty">No team members yet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = employees.map(em => `
+    <tr>
+      <td class="num-cell">${escapeHtml(em.employee_id)}</td>
+      <td>${escapeHtml(em.full_name)}</td>
+      <td><span class="badge badge-neutral">${escapeHtml(em.role)}</span></td>
+      <td><span class="badge ${em.active ? 'badge-good' : 'badge-danger'}">${em.active ? 'Active' : 'Disabled'}</span></td>
+      <td>${em.last_login ? formatDateTime(em.last_login) : 'Never'}</td>
+      <td>${em.employee_id !== currentUser.employee_id ? `<button class="btn btn-ghost btn-sm" onclick='toggleEmployee("${em.employee_id}", ${em.active})'>${em.active ? 'Disable' : 'Enable'}</button>` : ''}</td>
+    </tr>`).join('');
+}
+window.toggleEmployee = async function(id, currentlyActive){
+  try{
+    const { error } = await sb.from('rate_tracker_employees').update({active: !currentlyActive}).eq('employee_id', id);
+    if(error) throw error;
+    await logAudit('update', 'rate_tracker_employees', id, {active: !currentlyActive});
+    await loadEmployees();
+    renderTeam();
+    toast(currentlyActive ? 'Team member disabled.' : 'Team member re-enabled.', 'ok');
+  }catch(err){
+    toast('Could not update: ' + err.message, 'err');
+  }
+};
+
+/* ============================================================
+   PRO RATE COMPARISON VIEW
+   ============================================================ */
+function populateComparisonPeople(){
+  const sel=document.getElementById('cmp-person'); if(!sel) return;
+  const cur=sel.value;
+  const people=[...new Map(entries.map(e=>[e.submitted_by,e.submitted_by_name||employeeName(e.submitted_by)])).entries()];
+  sel.innerHTML='<option value="">All</option>'+people.sort((a,b)=>String(a[1]).localeCompare(String(b[1]))).map(([id,n])=>`<option value="${escapeHtml(id)}">${escapeHtml(n)}</option>`).join('');
+  sel.value=cur;
+}
+function filteredComparisonEntries(){
+  const q=(document.getElementById('cmp-search')?.value||'').trim().toLowerCase();
+  const type=document.getElementById('cmp-type')?.value||'';
+  const mode=document.getElementById('cmp-mode')?.value||'';
+  const person=document.getElementById('cmp-person')?.value||'';
+  return entries.filter(e=>{
+    const hay=[e.lane,e.invoice_no,e.bpo_no,e.shipper,e.consignee,e.requestor_name].join(' ').toLowerCase();
+    return (!q||hay.includes(q))&&(!type||e.shipment_type===type)&&(!mode||e.mode===mode)&&(!person||e.submitted_by===person);
+  });
+}
+function renderComparison(){
+  const tbody=document.querySelector('#comparison-table tbody'); if(!tbody) return;
+  populateComparisonPeople();
+  const data=filteredComparisonEntries().filter(e=>e.quoted_cost!==null&&e.quoted_cost!==undefined);
+  document.getElementById('cmp-count').textContent=data.length;
+  document.getElementById('cmp-fw').textContent=new Set(data.map(e=>e.forwarder_id)).size;
+  document.getElementById('cmp-lanes').textContent=new Set(data.map(e=>(e.lane||'').toLowerCase())).size;
+  const laneGroups={}; data.forEach(e=>{const k=(e.lane||'').trim()+'||'+(e.currency||'USD');(laneGroups[k]??=[]).push(e)});
+  let rendered=[]; let totalSaving=0;
+  Object.values(laneGroups).forEach(group=>{
+    group.sort((a,b)=>Number(a.quoted_cost)-Number(b.quoted_cost));
+    const highest=Math.max(...group.map(x=>Number(x.quoted_cost)));
+    group.forEach((e,i)=>{const f=forwarders.find(x=>x.id===e.forwarder_id);const saving=highest-Number(e.quoted_cost);if(i===0)totalSaving+=saving;rendered.push({e,rank:i+1,fw:f?f.name:'—',saving});});
+  });
+  rendered.sort((a,b)=>(a.e.lane||'').localeCompare(b.e.lane||'')||a.rank-b.rank);
+  document.getElementById('compare-saving').textContent=rendered.length?formatRate(totalSaving, rendered[0].e.currency||'USD'):'—';
+  if(!rendered.length){tbody.innerHTML='<tr><td colspan="12" class="table-empty">No matching quotations.</td></tr>';return;}
+  tbody.innerHTML=rendered.map(r=>`<tr class="${r.rank===1?'rank1':r.rank===2?'rank2':''}"><td><span class="rank-pill ${r.rank===1?'first':''}">${r.rank}</span></td><td>${escapeHtml(r.e.lane||'—')}</td><td><b>${escapeHtml(r.fw)}</b></td><td class="num-cell">${escapeHtml(formatRate(r.e.quoted_cost,r.e.currency))}</td><td class="saving">${r.saving>0?escapeHtml(formatRate(r.saving,r.e.currency)):'—'}</td><td class="num-cell">${r.e.transit_days??'—'}</td><td>${escapeHtml(r.e.shipment_type||'—')}</td><td>${escapeHtml(r.e.mode||'—')}</td><td>${escapeHtml(r.e.submitted_by_name||employeeName(r.e.submitted_by))}</td><td>${formatDateTime(r.e.created_at)}</td></tr>`).join('');
+}
+['cmp-search','cmp-type','cmp-mode','cmp-person'].forEach(id=>document.getElementById(id)?.addEventListener(id==='cmp-search'?'input':'change',renderComparison));
+document.getElementById('cmp-clear')?.addEventListener('click',()=>{['cmp-search','cmp-type','cmp-mode','cmp-person'].forEach(id=>document.getElementById(id).value='');renderComparison();});
+document.getElementById('export-compare-btn')?.addEventListener('click',()=>{
+ const rows=[['Lane','Forwarder','Total Rate','Currency','Transit Days','Shipment Type','Mode','Logged By','Logged At']];
+ filteredComparisonEntries().forEach(e=>{const f=forwarders.find(x=>x.id===e.forwarder_id);rows.push([e.lane,f?f.name:'',e.quoted_cost,e.currency,e.transit_days,e.shipment_type,e.mode,e.submitted_by_name,e.created_at]);});
+ downloadCSV('forwarder_rate_comparison.csv',rows);
+});
+const _oldLoadAll=loadAll; loadAll=async function(){await _oldLoadAll();renderComparison();};
+
+
+/* ============================================================
+   TRANSACTIONAL REPORTING — project/ref metadata stored in notes
+   ============================================================ */
+function metaFromEntry(e){
+  const n=e.notes||''; const grab=k=>{const m=n.match(new RegExp('\\['+k+':([^\\]]*)\\]'));return m?m[1].trim():''};
+  return {project:grab('PROJECT'),ref:grab('REF'),reason:grab('REASON')};
+}
+function txKey(e){const m=metaFromEntry(e);return m.ref||('LEGACY-'+(e.lane||'')+'-'+(e.submitted_by||'')+'-'+String(e.created_at||'').slice(0,16));}
+function reportDate(e){return new Date(e.created_at||e.ship_date||0)}
+function reportFilteredEntries(){
+  let data=entries.slice(); const period=document.getElementById('rpt-period')?.value||'all';
+  const month=document.getElementById('rpt-month')?.value||''; const year=document.getElementById('rpt-year')?.value||'';
+  const from=document.getElementById('rpt-from')?.value||''; const to=document.getElementById('rpt-to')?.value||'';
+  const now=new Date(); let start=null,end=null;
+  if(period==='month'&&month){start=new Date(month+'-01T00:00:00');end=new Date(start);end.setMonth(end.getMonth()+1);}
+  if(period==='year'&&year){start=new Date(year+'-01-01T00:00:00');end=new Date((Number(year)+1)+'-01-01T00:00:00');}
+  if(period==='ytd'){const y=year||String(now.getFullYear());start=new Date(y+'-01-01T00:00:00');end=(Number(y)===now.getFullYear()?new Date(now.getTime()+86400000):new Date((Number(y)+1)+'-01-01T00:00:00'));}
+  if(period==='custom'){if(from)start=new Date(from+'T00:00:00');if(to){end=new Date(to+'T00:00:00');end.setDate(end.getDate()+1)}}
+  if(start)data=data.filter(e=>reportDate(e)>=start); if(end)data=data.filter(e=>reportDate(e)<end);
+  const div=document.getElementById('rpt-div')?.value||'',person=document.getElementById('rpt-person')?.value||'',fw=document.getElementById('rpt-fw')?.value||'',q=(document.getElementById('rpt-search')?.value||'').toLowerCase().trim();
+  return data.filter(e=>{const m=metaFromEntry(e);const hay=[m.project,m.ref,e.lane,e.invoice_no,e.bpo_no,e.shipper,e.consignee].join(' ').toLowerCase();return(!div||e.div===div)&&(!person||e.submitted_by===person)&&(!fw||e.forwarder_id===fw)&&(!q||hay.includes(q));});
+}
+function transactionGroups(data){const g={};data.forEach(e=>(g[txKey(e)]??=[]).push(e));return g;}
+function populateReportFilters(){
+ const years=[...new Set(entries.map(e=>reportDate(e).getFullYear()).filter(Boolean))];const cy=new Date().getFullYear();if(!years.includes(cy))years.push(cy);years.sort((a,b)=>b-a);
+ const ys=document.getElementById('rpt-year');if(ys){const cur=ys.value;ys.innerHTML=years.map(y=>`<option>${y}</option>`).join('');ys.value=cur||String(cy)}
+ const ps=document.getElementById('rpt-person');if(ps){const cur=ps.value;const p=[...new Map(entries.map(e=>[e.submitted_by,e.submitted_by_name||employeeName(e.submitted_by)])).entries()];ps.innerHTML='<option value="">All</option>'+p.map(([id,n])=>`<option value="${escapeHtml(id)}">${escapeHtml(n)}</option>`).join('');ps.value=cur}
+ const fs=document.getElementById('rpt-fw');if(fs){const cur=fs.value;fs.innerHTML='<option value="">All</option>'+forwarders.map(f=>`<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');fs.value=cur}
+ const ds=document.getElementById('rpt-div');if(ds){const cur=ds.value;const divs=[...new Set(entries.map(e=>(e.div||'').trim()).filter(Boolean))].sort();ds.innerHTML='<option value="">All divisions</option>'+divs.map(d=>`<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');ds.value=divs.includes(cur)?cur:''}
+ const mi=document.getElementById('rpt-month');if(mi&&!mi.value)mi.value=new Date().toISOString().slice(0,7);
+}
+function renderReport(){
+ populateReportFilters();const data=reportFilteredEntries();const groups=transactionGroups(data);const tbody=document.querySelector('#report-table tbody');
+ document.getElementById('rpt-transactions').textContent=Object.keys(groups).length;document.getElementById('rpt-quotes').textContent=data.length;document.getElementById('rpt-ast').textContent=data.filter(e=>e.shipment_type==='XTPL').length;document.getElementById('rpt-brcm').textContent=data.filter(e=>e.shipment_type==='BRCM').length;document.getElementById('rpt-people').textContent=new Set(data.map(e=>e.submitted_by)).size;
+ const rows=Object.entries(groups).map(([ref,g])=>{const valid=g.filter(e=>e.quoted_cost!==null&&e.quoted_cost!==undefined);const best=valid.length?valid.reduce((a,b)=>Number(a.quoted_cost)<=Number(b.quoted_cost)?a:b):g[0];const m=metaFromEntry(g[0]);const f=forwarders.find(x=>x.id===best.forwarder_id);return{ref,g,best,m,f}}).sort((a,b)=>reportDate(b.g[0])-reportDate(a.g[0]));
+ if(!rows.length){tbody.innerHTML='<tr><td colspan="10" class="table-empty">No transactions for this period.</td></tr>';return}
+ tbody.innerHTML=rows.map(r=>`<tr><td>${formatDateTime(r.g[0].created_at)}</td><td class="num-cell">${escapeHtml(r.m.ref||r.ref)}</td><td><b>${escapeHtml(r.m.project||'Legacy entry')}</b></td><td>${escapeHtml(r.g[0].div||'—')}</td><td>${escapeHtml(r.g[0].lane||'—')}</td><td>${escapeHtml(r.f?r.f.name:'—')}</td><td class="num-cell">${formatRate(r.best.quoted_cost,r.best.currency)}</td><td>${r.g.length}</td><td>${escapeHtml(r.m.reason||'Lowest total cost')}</td><td>${escapeHtml(r.g[0].submitted_by_name||employeeName(r.g[0].submitted_by))}</td></tr>`).join('');
+}
+function reportCsvDetail(){const data=reportFilteredEntries(),groups=transactionGroups(data);const rows=[['Transaction Date','Year','Month','Quarter','Comparison ID','Project Title','Division','Shipment Type','Mode','Origin','Destination','Lane','Forwarder','Total Rate','Currency','Selected','Selection Reason','Transit Days','Shipper','Consignee','Invoice #','BPO #','Ship Date','Status','Cost Center','Requestor','Team Member','Employee ID','Logged At']];data.forEach(e=>{const d=reportDate(e),m=metaFromEntry(e),g=groups[txKey(e)]||[e],valid=g.filter(x=>x.quoted_cost!==null&&x.quoted_cost!==undefined),min=valid.length?Math.min(...valid.map(x=>Number(x.quoted_cost))):null,f=forwarders.find(x=>x.id===e.forwarder_id);rows.push([d.toISOString().slice(0,10),d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),'Q'+(Math.floor(d.getMonth()/3)+1),m.ref||txKey(e),m.project||'',e.div||'',e.shipment_type||'',e.mode||'',e.origin||'',e.destination||'',e.lane||'',f?f.name:'',e.quoted_cost??'',e.currency||'',min!==null&&Number(e.quoted_cost)===min?'YES':'NO',m.reason||'',e.transit_days??'',e.shipper||'',e.consignee||'',e.invoice_no||'',e.bpo_no||'',e.ship_date||'',e.status||'',e.bu_cost_center||'',e.requestor_name||'',e.submitted_by_name||employeeName(e.submitted_by),e.submitted_by||'',e.created_at||'']);});return rows}
+function reportCsvSummary(){const groups=transactionGroups(reportFilteredEntries());const rows=[['Transaction Date','Year','Month','Comparison ID','Project Title','Division','Lane','Selected Forwarder','Selected Total','Currency','Quotes Compared','Selection Reason','Team Member']];Object.values(groups).forEach(g=>{const valid=g.filter(e=>e.quoted_cost!==null&&e.quoted_cost!==undefined);const b=valid.length?valid.reduce((a,x)=>Number(a.quoted_cost)<=Number(x.quoted_cost)?a:x):g[0],m=metaFromEntry(g[0]),d=reportDate(g[0]),f=forwarders.find(x=>x.id===b.forwarder_id);rows.push([d.toISOString().slice(0,10),d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),m.ref||txKey(g[0]),m.project||'',g[0].div||'',g[0].lane||'',f?f.name:'',b.quoted_cost??'',b.currency||'',g.length,m.reason||'',g[0].submitted_by_name||employeeName(g[0].submitted_by)]);});return rows}
+['rpt-period','rpt-month','rpt-year','rpt-from','rpt-to','rpt-div','rpt-person','rpt-fw'].forEach(id=>document.getElementById(id)?.addEventListener('change',renderReport));document.getElementById('rpt-search')?.addEventListener('input',renderReport);document.getElementById('rpt-run')?.addEventListener('click',renderReport);document.getElementById('rpt-export-detail')?.addEventListener('click',()=>downloadCSV('rate_comparison_pivot_export.csv',reportCsvDetail()));document.getElementById('rpt-export-summary')?.addEventListener('click',()=>downloadCSV('rate_comparison_summary.csv',reportCsvSummary()));document.getElementById('rpt-export-excel')?.addEventListener('click',downloadExcelReport);
+const _transactionalLoadAll=loadAll;loadAll=async function(){await _transactionalLoadAll();renderReport();};
+</script>
+</body>
+</html>
