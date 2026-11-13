@@ -1025,6 +1025,30 @@ footer.appfoot{background:rgba(13,19,29,.55);letter-spacing:.04em}
   </div>
 </div>
 
+<div class="modal-overlay" id="shipedit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;z-index:200;padding:20px;">
+  <div style="background:#fff;color:#182634;border-radius:12px;width:100%;max-width:560px;max-height:90vh;overflow:auto;padding:22px;">
+    <h3 style="margin:0 0 4px;font-size:17px;">Edit shipment details</h3>
+    <p id="se-sub" style="margin:0 0 14px;font-size:12.5px;color:#5B6B7C;"></p>
+    <input type="hidden" id="se-lane">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div><label style="font-size:12px;font-weight:600;">Shipper</label><input type="text" id="se-shipper" style="width:100%;padding:8px;border:1px solid #ccd3da;border-radius:6px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">Consignee</label><input type="text" id="se-consignee" style="width:100%;padding:8px;border:1px solid #ccd3da;border-radius:6px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">Invoice #</label><input type="text" id="se-invoice" style="width:100%;padding:8px;border:1px solid #ccd3da;border-radius:6px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">BPO#</label><input type="text" id="se-bpo" style="width:100%;padding:8px;border:1px solid #ccd3da;border-radius:6px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">Ship date</label><input type="date" id="se-ship-date" style="width:100%;padding:8px;border:1px solid #ccd3da;border-radius:6px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">Status</label>
+        <select id="se-status" style="width:100%;padding:8px;border:1px solid #ccd3da;border-radius:6px;"><option>Pending</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option></select></div>
+      <div><label style="font-size:12px;font-weight:600;">Delivered date</label><input type="date" id="se-delivered" style="width:100%;padding:8px;border:1px solid #ccd3da;border-radius:6px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">BU cost center</label><input type="text" id="se-cost-center" style="width:100%;padding:8px;border:1px solid #ccd3da;border-radius:6px;"></div>
+      <div style="grid-column:1/-1;"><label style="font-size:12px;font-weight:600;">Requestor name</label><input type="text" id="se-requestor" style="width:100%;padding:8px;border:1px solid #ccd3da;border-radius:6px;"></div>
+    </div>
+    <p style="font-size:11.5px;color:#5B6B7C;margin:12px 0 0;">Changes apply to every forwarder quote on this lane. Delivered entries lock 7 days after the delivered date.</p>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+      <button type="button" class="btn btn-ghost" id="se-cancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="se-save">Save changes</button>
+    </div>
+  </div>
+</div>
 <div id="toast-stack"></div>
 
 <script>
@@ -1677,7 +1701,7 @@ function renderChosenLaneTable(){
         <td>${escapeHtml(e.bu_cost_center || '—')}</td>
         <td>${escapeHtml(e.requestor_name || '—')}</td>
         <td>${escapeHtml(e.submitted_by_name || employeeName(e.submitted_by))}</td>
-        <td>${canEdit ? `<button class="btn btn-ghost btn-sm" onclick='deleteEntry("${e.id}")'>Delete</button>` : (lockedNote ? '<span class="muted" title="Locked 7 days after delivery" style="font-size:12px;font-weight:700;">&#128274; Locked</span>' : '')}</td>
+        <td>${canEdit ? `<button class="btn btn-ghost btn-sm" onclick='openShipEdit("${e.id}")'>Edit</button> <button class="btn btn-ghost btn-sm" onclick='deleteEntry("${e.id}")'>Delete</button>` : (lockedNote ? '<span class="muted" title="Locked 7 days after delivery" style="font-size:12px;font-weight:700;">&#128274; Locked</span>' : '')}</td>
       </tr>`;
   }).join('');
 }
@@ -1691,6 +1715,67 @@ document.getElementById('export-chosen-btn').addEventListener('click', ()=>{
       e.submitted_by_name]);
   });
   downloadCSV('chosen_rates_by_lane.csv', rows);
+});
+
+window.openShipEdit = function(id){
+  const e = entries.find(x => x.id === id);
+  if(!e) return;
+  if(isEntryLocked(e)){ toast('This entry was delivered over a week ago and is locked. Ask your admin.', 'err'); return; }
+  document.getElementById('se-lane').value = e.lane || '';
+  document.getElementById('se-sub').textContent = 'Lane: ' + (e.lane || '—');
+  document.getElementById('se-shipper').value = e.shipper || '';
+  document.getElementById('se-consignee').value = e.consignee || '';
+  document.getElementById('se-invoice').value = e.invoice_no || '';
+  document.getElementById('se-bpo').value = e.bpo_no || '';
+  document.getElementById('se-ship-date').value = e.ship_date ? String(e.ship_date).slice(0,10) : '';
+  document.getElementById('se-status').value = e.status || 'Pending';
+  document.getElementById('se-delivered').value = e.delivered_date ? String(e.delivered_date).slice(0,10) : '';
+  document.getElementById('se-cost-center').value = e.bu_cost_center || '';
+  document.getElementById('se-requestor').value = e.requestor_name || '';
+  document.getElementById('shipedit-modal').style.display = 'flex';
+};
+function closeShipEdit(){ document.getElementById('shipedit-modal').style.display = 'none'; }
+document.getElementById('se-cancel').addEventListener('click', closeShipEdit);
+document.getElementById('se-status').addEventListener('change', ()=>{
+  const d = document.getElementById('se-delivered');
+  if(document.getElementById('se-status').value === 'Delivered' && !d.value){ d.value = new Date().toISOString().slice(0,10); }
+});
+document.getElementById('se-save').addEventListener('click', async ()=>{
+  const lane = document.getElementById('se-lane').value;
+  const status = document.getElementById('se-status').value;
+  let delivered = document.getElementById('se-delivered').value || null;
+  if(status === 'Delivered' && !delivered) delivered = new Date().toISOString().slice(0,10);
+  if(status !== 'Delivered') delivered = null;
+  const patch = {
+    shipper: document.getElementById('se-shipper').value.trim() || null,
+    consignee: document.getElementById('se-consignee').value.trim() || null,
+    invoice_no: document.getElementById('se-invoice').value.trim() || null,
+    bpo_no: document.getElementById('se-bpo').value.trim() || null,
+    ship_date: document.getElementById('se-ship-date').value || null,
+    status: status,
+    delivered_date: delivered,
+    bu_cost_center: document.getElementById('se-cost-center').value.trim() || null,
+    requestor_name: document.getElementById('se-requestor').value.trim() || null,
+    updated_at: new Date().toISOString()
+  };
+  const btn = document.getElementById('se-save');
+  btn.disabled = true;
+  try{
+    // only touch rows the lock allows (admin can touch all)
+    const ids = entries.filter(x => (x.lane||'') === lane && !isEntryLocked(x)).map(x => x.id);
+    if(ids.length === 0) throw new Error('Nothing to update for this lane.');
+    const { error } = await sb.from('rate_tracker_entries').update(patch).in('id', ids);
+    if(error) throw error;
+    await logAudit('update', 'rate_tracker_entries', ids[0], {lane: lane, edited_rows: ids.length, status: status});
+    closeShipEdit();
+    toast('Shipment details updated.', 'ok');
+    await loadEntries();
+    renderShipmentTypeSummary(); renderChosenLaneTable(); renderOverview(); renderQuotesByPerson(); renderLanesQuoted(); renderForwarders();
+  }catch(err){
+    toast('Could not save: ' + err.message, 'err');
+  }finally{
+    btn.disabled = false;
+  }
 });
 
 window.deleteEntry = async function(id){
