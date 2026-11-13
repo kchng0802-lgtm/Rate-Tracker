@@ -1485,6 +1485,7 @@ document.getElementById('entry-form').addEventListener('submit', async (e)=>{
     bpo_no: document.getElementById('ef-bpo').value.trim() || null,
     ship_date: document.getElementById('ef-ship-date').value || null,
     status: document.getElementById('ef-status').value,
+    delivered_date: document.getElementById('ef-status').value === 'Delivered' ? new Date().toISOString().slice(0,10) : null,
     bu_cost_center: document.getElementById('ef-cost-center').value.trim() || null,
     requestor_name: document.getElementById('ef-requestor').value.trim() || null,
     submitted_by: currentUser.employee_id,
@@ -1637,6 +1638,16 @@ function renderShipmentTypeSummary(){
   document.querySelectorAll('.shipment-type-tbody').forEach(tbody => { tbody.innerHTML = html; });
 }
 
+/* One-week lock: team members can change a delivered entry for 7 days after
+   its delivered date; after that only an admin can. No delivered date = still open. */
+const LOCK_AFTER_DAYS = 7;
+function isEntryLocked(e){
+  if(currentUser && currentUser.role === 'admin') return false;
+  if(!e || e.status !== 'Delivered' || !e.delivered_date) return false;
+  const p = String(e.delivered_date).slice(0,10).split('-');
+  const lockAt = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]) + LOCK_AFTER_DAYS);
+  return new Date() >= lockAt;
+}
 function renderChosenLaneTable(){
   const chosen = chosenPerLane();
   const tbody = document.querySelector('#chosen-lane-table tbody');
@@ -1647,7 +1658,8 @@ function renderChosenLaneTable(){
   tbody.innerHTML = chosen.map(r=>{
     const e = r.entry;
     const badgeClass = r.shipment_type === 'XTPL' ? 'badge-xtpl' : 'badge-brcm';
-    const canEdit = currentUser.role === 'admin' || e.submitted_by === currentUser.employee_id;
+    const canEdit = (currentUser.role === 'admin' || e.submitted_by === currentUser.employee_id) && !isEntryLocked(e);
+    const lockedNote = isEntryLocked(e);
     return `
       <tr>
         <td>${escapeHtml(r.lane)}</td>
@@ -1665,7 +1677,7 @@ function renderChosenLaneTable(){
         <td>${escapeHtml(e.bu_cost_center || '—')}</td>
         <td>${escapeHtml(e.requestor_name || '—')}</td>
         <td>${escapeHtml(e.submitted_by_name || employeeName(e.submitted_by))}</td>
-        <td>${canEdit ? `<button class="btn btn-ghost btn-sm" onclick='deleteEntry("${e.id}")'>Delete</button>` : ''}</td>
+        <td>${canEdit ? `<button class="btn btn-ghost btn-sm" onclick='deleteEntry("${e.id}")'>Delete</button>` : (lockedNote ? '<span class="muted" title="Locked 7 days after delivery" style="font-size:12px;font-weight:700;">&#128274; Locked</span>' : '')}</td>
       </tr>`;
   }).join('');
 }
@@ -1682,6 +1694,8 @@ document.getElementById('export-chosen-btn').addEventListener('click', ()=>{
 });
 
 window.deleteEntry = async function(id){
+  const target = entries.find(x => x.id === id);
+  if(isEntryLocked(target)){ toast('This entry was delivered over a week ago and is locked. Ask your admin.', 'err'); return; }
   if(!confirm('Delete this rate entry? This can\'t be undone — if it was the chosen (lowest) quote, the next-lowest quote for that lane takes its place.')) return;
   try{
     const { error } = await sb.from('rate_tracker_entries').delete().eq('id', id);
